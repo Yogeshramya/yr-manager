@@ -588,11 +588,11 @@ export default function ChecklistDashboard({
       {/* Date Navigation and Section Title */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
             Daily Checklist <span className="text-gold-gradient">Dashboard</span>
           </h2>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <p className="text-sm text-slate-400">
+            <p className="text-xs sm:text-sm text-slate-400">
               Choose daily titles, log amounts, and instantly review reports without complex ledgers.
             </p>
             {lastLoginAt && (
@@ -626,8 +626,8 @@ export default function ChecklistDashboard({
         </div>
 
         {/* Date Selector & Configuration Button */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center rounded-xl bg-slate-950 border border-slate-800 p-1.5 shadow-inner">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full md:w-auto">
+          <div className="flex items-center justify-between w-full sm:w-auto rounded-xl bg-slate-950 border border-slate-800 p-1.5 shadow-inner">
             <button
               onClick={() => changeDateByDays(-1)}
               className="p-2 text-slate-400 hover:text-white hover:bg-slate-900 rounded-lg transition"
@@ -635,13 +635,13 @@ export default function ChecklistDashboard({
             >
               <ChevronLeft size={16} />
             </button>
-            <div className="flex items-center gap-2 px-3 text-sm font-semibold text-slate-200">
-              <Calendar size={14} className="text-gold-400" />
+            <div className="flex items-center gap-2 px-2 sm:px-3 text-xs sm:text-sm font-semibold text-slate-200">
+              <Calendar size={14} className="text-gold-400 shrink-0" />
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-transparent border-none text-slate-200 text-sm font-bold focus:outline-none cursor-pointer"
+                className="bg-transparent border-none text-slate-200 text-xs sm:text-sm font-bold focus:outline-none cursor-pointer"
               />
             </div>
             <button
@@ -655,83 +655,83 @@ export default function ChecklistDashboard({
 
           <button
             onClick={() => setUpiModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blue-500/30 bg-blue-950/40 text-blue-400 hover:bg-blue-900/60 hover:text-white text-sm font-bold transition shadow-lg shadow-blue-950/20"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-blue-500/30 bg-blue-950/40 text-blue-400 hover:bg-blue-900/60 hover:text-white text-xs sm:text-sm font-bold transition shadow-lg shadow-blue-950/20 whitespace-nowrap"
           >
-            <Smartphone size={16} />
+            <Smartphone size={16} className="shrink-0" />
             <span>Sync UPI Apps</span>
           </button>
 
           <button
             onClick={() => setConfigOpen(!configOpen)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
               configOpen
                 ? "bg-gold-gradient text-slate-950 border-gold-400 font-bold"
                 : "border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover:border-slate-700"
             }`}
           >
-            <Settings size={16} />
+            <Settings size={16} className="shrink-0" />
             <span>Add New Checklist</span>
           </button>
         </div>
       </div>
 
       {/* KPI Cards Row (Filtered for the selected day + Past Report + Pending Payments) */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
         {/* Today's Income */}
-        <div className="glass-card group relative overflow-hidden rounded-2xl p-6 transition duration-300 hover:-translate-y-1">
+        <div className="glass-card group relative overflow-hidden rounded-2xl p-4 sm:p-6 transition duration-300 hover:-translate-y-1">
           <div className="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-gold-500/10 blur-xl transition group-hover:scale-125" />
-          <div className="flex items-center gap-4">
-            <div className="rounded-xl bg-gold-950 border border-gold-500/20 p-3.5 text-gold-400">
-              <TrendingUp className="h-6 w-6" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="rounded-xl bg-gold-950 border border-gold-500/20 p-3 sm:p-3.5 text-gold-400 shrink-0">
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Income Logged ({selectedDate})</p>
-              <h4 className="mt-1 text-2xl font-black text-white">{formatCurrency(todayIncomesTotal)}</h4>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">Income Logged ({selectedDate})</p>
+              <h4 className="mt-1 text-xl sm:text-2xl font-black text-white truncate">{formatCurrency(todayIncomesTotal)}</h4>
             </div>
           </div>
         </div>
 
         {/* Today's Expenses */}
-        <div className="glass-card group relative overflow-hidden rounded-2xl p-6 transition duration-300 hover:-translate-y-1">
+        <div className="glass-card group relative overflow-hidden rounded-2xl p-4 sm:p-6 transition duration-300 hover:-translate-y-1">
           <div className="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-red-500/10 blur-xl transition group-hover:scale-125" />
-          <div className="flex items-center gap-4">
-            <div className="rounded-xl bg-red-950/30 border border-red-500/20 p-3.5 text-red-400">
-              <TrendingDown className="h-6 w-6" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="rounded-xl bg-red-950/30 border border-red-500/20 p-3 sm:p-3.5 text-red-400 shrink-0">
+              <TrendingDown className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Expenses Logged ({selectedDate})</p>
-              <h4 className="mt-1 text-2xl font-black text-white">{formatCurrency(todayExpensesTotal)}</h4>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">Expenses Logged ({selectedDate})</p>
+              <h4 className="mt-1 text-xl sm:text-2xl font-black text-white truncate">{formatCurrency(todayExpensesTotal)}</h4>
             </div>
           </div>
         </div>
 
         {/* Today's Net profit */}
-        <div className="glass-card group relative overflow-hidden rounded-2xl p-6 transition duration-300 hover:-translate-y-1">
+        <div className="glass-card group relative overflow-hidden rounded-2xl p-4 sm:p-6 transition duration-300 hover:-translate-y-1">
           <div className={`absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full blur-xl transition group-hover:scale-125 ${todayProfit >= 0 ? "bg-emerald-500/10" : "bg-rose-500/10"}`} />
-          <div className="flex items-center gap-4">
-            <div className={`rounded-xl border p-3.5 ${todayProfit >= 0 ? "bg-emerald-950/30 border-emerald-500/20 text-emerald-400" : "bg-rose-950/30 border-rose-500/20 text-rose-400"}`}>
-              <CircleDollarSign className="h-6 w-6" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className={`rounded-xl border p-3 sm:p-3.5 shrink-0 ${todayProfit >= 0 ? "bg-emerald-950/30 border-emerald-500/20 text-emerald-400" : "bg-rose-950/30 border-rose-500/20 text-rose-400"}`}>
+              <CircleDollarSign className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Daily Balance Net</p>
-              <h4 className={`mt-1 text-2xl font-black ${todayProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{formatCurrency(todayProfit)}</h4>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">Daily Balance Net</p>
+              <h4 className={`mt-1 text-xl sm:text-2xl font-black truncate ${todayProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{formatCurrency(todayProfit)}</h4>
             </div>
           </div>
         </div>
 
         {/* Today Current Balance (Past Reports + Today) */}
-        <div className="glass-card group relative overflow-hidden rounded-2xl p-6 transition duration-300 hover:-translate-y-1 border-cyan-500/20">
+        <div className="glass-card group relative overflow-hidden rounded-2xl p-4 sm:p-6 transition duration-300 hover:-translate-y-1 border-cyan-500/20">
           <div className="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-cyan-500/15 blur-xl transition group-hover:scale-125" />
-          <div className="flex items-center gap-4">
-            <div className="rounded-xl bg-cyan-950/50 border border-cyan-500/30 p-3.5 text-cyan-400">
-              <Wallet className="h-6 w-6" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="rounded-xl bg-cyan-950/50 border border-cyan-500/30 p-3 sm:p-3.5 text-cyan-400 shrink-0">
+              <Wallet className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Today Current Balance</p>
-              <h4 className={`mt-1 text-2xl font-black ${todayCurrentBalance >= 0 ? "text-cyan-400" : "text-rose-400"}`}>
+              <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">Today Current Balance</p>
+              <h4 className={`mt-1 text-xl sm:text-2xl font-black truncate ${todayCurrentBalance >= 0 ? "text-cyan-400" : "text-rose-400"}`}>
                 {formatCurrency(todayCurrentBalance)}
               </h4>
-              <p className="mt-1 text-[11px] text-slate-400 flex items-center gap-1.5 font-medium truncate">
+              <p className="mt-1 text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap font-medium">
                 <span>Past: <strong className="text-slate-200">{formatCurrency(pastReportsBalance)}</strong></span>
                 <span>•</span>
                 <span>Today: <strong className={todayProfit >= 0 ? "text-emerald-400" : "text-rose-400"}>{todayProfit >= 0 ? "+" : ""}{formatCurrency(todayProfit)}</strong></span>
@@ -741,18 +741,18 @@ export default function ChecklistDashboard({
         </div>
 
         {/* Pending Payments Card */}
-        <div className="glass-card group relative overflow-hidden rounded-2xl p-6 transition duration-300 hover:-translate-y-1 border-amber-500/30">
+        <div className="glass-card group relative overflow-hidden rounded-2xl p-4 sm:p-6 transition duration-300 hover:-translate-y-1 border-amber-500/30">
           <div className="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-amber-500/15 blur-xl transition group-hover:scale-125" />
-          <div className="flex items-center gap-4">
-            <div className="rounded-xl bg-amber-950/50 border border-amber-500/30 p-3.5 text-amber-400">
-              <Clock className="h-6 w-6" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="rounded-xl bg-amber-950/50 border border-amber-500/30 p-3 sm:p-3.5 text-amber-400 shrink-0">
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Pending Payment</p>
-              <h4 className="mt-1 text-2xl font-black text-amber-400">
+              <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">Pending Payment</p>
+              <h4 className="mt-1 text-xl sm:text-2xl font-black text-amber-400 truncate">
                 {formatCurrency(totalPendingAmount)}
               </h4>
-              <div className="mt-1 flex items-center justify-between text-[11px] font-semibold">
+              <div className="mt-1 flex items-center justify-between text-[11px] font-semibold gap-2 flex-wrap">
                 <button
                   onClick={() => setViewPendingListOpen(true)}
                   className="text-slate-400 hover:text-white underline font-medium"
@@ -1267,8 +1267,8 @@ export default function ChecklistDashboard({
 
       {/* Logging modal Overlay */}
       {logModalOpen && selectedItemForLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="glass-card w-full max-w-md rounded-2xl p-6 border border-slate-800 shadow-2xl relative animate-in scale-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="glass-card w-[92vw] max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-4 sm:p-6 border border-slate-800 shadow-2xl relative animate-in scale-in duration-200">
             <button
               onClick={() => setLogModalOpen(false)}
               className="absolute top-4 right-4 text-slate-500 hover:text-white"
@@ -1276,7 +1276,7 @@ export default function ChecklistDashboard({
               <X size={18} />
             </button>
 
-            <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 flex items-center gap-2">
               <CheckCircle className={selectedItemForLog.type === "Income" ? "text-gold-400" : "text-red-400"} size={20} />
               <span>Daily checklist logging</span>
             </h3>
@@ -1345,8 +1345,8 @@ export default function ChecklistDashboard({
 
       {/* Record Pending Payment Modal */}
       {pendingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="glass-card w-full max-w-md rounded-2xl p-6 border border-slate-800 shadow-2xl relative animate-in scale-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="glass-card w-[92vw] max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-4 sm:p-6 border border-slate-800 shadow-2xl relative animate-in scale-in duration-200">
             <button
               onClick={() => setPendingModalOpen(false)}
               className="absolute top-4 right-4 text-slate-500 hover:text-white"
@@ -1354,7 +1354,7 @@ export default function ChecklistDashboard({
               <X size={18} />
             </button>
 
-            <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 flex items-center gap-2">
               <Clock className="text-amber-400" size={20} />
               <span>Record Pending Payment</span>
             </h3>
@@ -1432,8 +1432,8 @@ export default function ChecklistDashboard({
 
       {/* View Pending Payments List Modal */}
       {viewPendingListOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="glass-card w-full max-w-xl rounded-2xl p-6 border border-slate-800 shadow-2xl relative max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="glass-card w-[92vw] max-w-xl max-h-[85vh] rounded-2xl p-4 sm:p-6 border border-slate-800 shadow-2xl relative flex flex-col">
             <button
               onClick={() => setViewPendingListOpen(false)}
               className="absolute top-4 right-4 text-slate-500 hover:text-white"
@@ -1441,9 +1441,9 @@ export default function ChecklistDashboard({
               <X size={18} />
             </button>
 
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4 gap-2 flex-wrap sm:flex-nowrap">
               <div>
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                   <Clock className="text-amber-400" size={20} />
                   <span>Pending Payments List</span>
                 </h3>
@@ -1475,7 +1475,7 @@ export default function ChecklistDashboard({
                 pendingPayments.map((p) => (
                   <div
                     key={p._id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-slate-950 border border-slate-850 gap-3"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl bg-slate-950 border border-slate-850 gap-3"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">

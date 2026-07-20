@@ -82,23 +82,23 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-slate-800 bg-slate-950 px-4 sm:px-6 shrink-0">
-      <div className="flex items-center gap-3">
+    <header className="flex h-16 items-center justify-between border-b border-slate-800 bg-slate-950 px-3 sm:px-6 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Mobile Hamburger Toggle Button */}
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
-            className="lg:hidden p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:border-slate-700 transition"
+            className="lg:hidden p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:border-slate-700 transition shrink-0"
             aria-label="Toggle Navigation Menu"
           >
             <Menu size={20} />
           </button>
         )}
 
-        <h1 className="text-lg sm:text-xl font-black text-white truncate">{getPageTitle()}</h1>
+        <h1 className="text-base sm:text-xl font-black text-white truncate max-w-[130px] xs:max-w-[200px] sm:max-w-none">{getPageTitle()}</h1>
       </div>
 
-      <div className="flex items-center gap-3 sm:gap-6">
+      <div className="flex items-center gap-2 sm:gap-6 shrink-0">
         {/* Last Login Badge */}
         {lastLogin && (
           <div className="hidden lg:flex items-center gap-1.5 rounded-full bg-slate-900 border border-slate-800 px-3 py-1 text-xs text-slate-400">
@@ -116,14 +116,15 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-950/20 px-5 py-3 text-sm font-semibold text-red-400 hover:bg-red-950/30 transition"
+          className="flex items-center justify-center gap-1.5 rounded-lg border border-red-500/20 bg-red-950/20 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-red-400 hover:bg-red-950/30 transition"
+          title="Logout"
         >
-          <LogOut size={16} />
-          Logout
+          <LogOut size={15} />
+          <span className="hidden xs:inline">Logout</span>
         </button>
 
         {/* User Info and Avatar */}
-        <div className="flex items-center gap-3 border-l border-slate-800 pl-4 sm:pl-6">
+        <div className="flex items-center gap-3 border-l border-slate-800 pl-2.5 sm:pl-6">
           <div className="text-right hidden md:block">
             <p className="text-xs font-semibold text-white capitalize">{userName}</p>
             <p className="text-[10px] text-slate-500 mt-0.5">Workspace Owner</p>

@@ -23,7 +23,7 @@ export default function DashboardLayout({
           onToggleMobileSidebar={() => setMobileSidebarOpen((prev) => !prev)}
         />
 
-        <main className="flex-1 overflow-y-auto bg-slate-900 p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-900 p-3 sm:p-6">
           {children}
         </main>
       </div>
