@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, User, Loader2 } from "lucide-react";
+import LoadingPage from "@/app/components/layout/Loadingpage";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,8 +12,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
-  const initialLetter = username.trim() ? username.trim().charAt(0).toUpperCase() : "A";
+  const initialLetter = username.trim() ? username.trim().charAt(0).toUpperCase() : "Y";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,14 +33,24 @@ export default function LoginPage() {
         throw new Error(data.error || "Login failed");
       }
 
+      setRedirecting(true);
       router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
       setError(err.message || "Something went wrong. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
+
+  if (redirecting) {
+    return (
+      <LoadingPage
+        title="Accessing Workspace"
+        subtitle={`Authenticated successfully. Preparing your ERP dashboard...`}
+        brandLetter={initialLetter}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-12 sm:px-6 lg:px-8">
