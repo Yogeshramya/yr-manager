@@ -37,6 +37,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
     }
 
+    // Record last login time
+    user.lastLoginAt = new Date();
+    await user.save();
+
     const token = signToken({
       userId: user._id.toString(),
       role: user.role,

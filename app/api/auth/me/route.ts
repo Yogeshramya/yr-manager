@@ -38,6 +38,7 @@ export async function GET() {
         email: user.email || "",
         role: user.role || "Business Owner",
         businessId: user.businessId,
+        lastLoginAt: user.lastLoginAt ? new Date(user.lastLoginAt).toISOString() : new Date().toISOString(),
       },
     });
   } catch (error: any) {

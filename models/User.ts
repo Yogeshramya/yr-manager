@@ -12,6 +12,7 @@ const UserSchema = new Schema(
       default: "Staff",
     },
     businessId: { type: Schema.Types.ObjectId, ref: "Business" },
+    lastLoginAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

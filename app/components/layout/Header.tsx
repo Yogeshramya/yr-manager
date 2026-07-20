@@ -2,10 +2,28 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
+import { Menu, Clock } from "lucide-react";
 
 interface HeaderProps {
   onToggleMobileSidebar?: () => void;
+}
+
+function formatLastLogin(dateStr?: string) {
+  if (!dateStr) return "Just now";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "Just now";
+    return d.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "Just now";
+  }
 }
 
 export default function Header({ onToggleMobileSidebar }: HeaderProps) {
@@ -13,6 +31,7 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
   const [businessName, setBusinessName] = useState("Digital Workspace");
   const [userName, setUserName] = useState("Admin");
   const [initialLetter, setInitialLetter] = useState("A");
+  const [lastLogin, setLastLogin] = useState<string>("");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -24,6 +43,9 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
             const displayName = data.user.username || data.user.name || "Admin";
             setUserName(displayName);
             setInitialLetter(displayName.charAt(0).toUpperCase());
+            if (data.user.lastLoginAt) {
+              setLastLogin(data.user.lastLoginAt);
+            }
             if (data.user.businessId) {
               setBusinessName(data.user.businessId.name);
             }
@@ -62,6 +84,16 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-3 sm:gap-6">
+        {/* Last Login Badge */}
+        {lastLogin && (
+          <div className="hidden lg:flex items-center gap-1.5 rounded-full bg-slate-900 border border-slate-800 px-3 py-1 text-xs text-slate-400">
+            <Clock size={12} className="text-gold-400" />
+            <span className="text-[11px]">
+              Last Login: <strong className="text-slate-200">{formatLastLogin(lastLogin)}</strong>
+            </span>
+          </div>
+        )}
+
         {/* Workspace Display */}
         <span className="hidden sm:inline-block rounded-full bg-gold-950/40 border border-gold-500/20 px-3.5 py-1 text-xs font-semibold text-gold-400 truncate max-w-[180px]">
           💼 {businessName}

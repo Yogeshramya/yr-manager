@@ -101,6 +101,24 @@ export default function ChecklistDashboard({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [lastLoginAt, setLastLoginAt] = useState<string>("");
+
+  useEffect(() => {
+    const fetchLastLogin = async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user?.lastLoginAt) {
+            setLastLoginAt(data.user.lastLoginAt);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load last login", err);
+      }
+    };
+    fetchLastLogin();
+  }, []);
 
   // Modal for Pending Payment
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
@@ -573,9 +591,38 @@ export default function ChecklistDashboard({
           <h2 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
             Daily Checklist <span className="text-gold-gradient">Dashboard</span>
           </h2>
-          <p className="text-sm text-slate-400 mt-1">
-            Choose daily titles, log amounts, and instantly review reports without complex ledgers.
-          </p>
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
+            <p className="text-sm text-slate-400">
+              Choose daily titles, log amounts, and instantly review reports without complex ledgers.
+            </p>
+            {lastLoginAt && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 border border-slate-800 px-3 py-0.5 text-xs text-slate-400">
+                <Clock size={12} className="text-gold-400" />
+                <span>
+                  Last Login:{" "}
+                  <strong className="text-slate-200">
+                    {(() => {
+                      try {
+                        const d = new Date(lastLoginAt);
+                        return isNaN(d.getTime())
+                          ? "Just now"
+                          : d.toLocaleString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            });
+                      } catch {
+                        return "Just now";
+                      }
+                    })()}
+                  </strong>
+                </span>
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Date Selector & Configuration Button */}
