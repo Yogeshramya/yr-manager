@@ -20,7 +20,7 @@ export async function GET() {
     const pendingPayments = await PendingPayment.find({
       businessId: decoded.businessId,
       status: "Pending",
-    }).sort({ date: -1 });
+    }).sort({ date: -1 }).lean();
 
     const totalPendingAmount = pendingPayments.reduce((sum, item) => sum + item.amount, 0);
 

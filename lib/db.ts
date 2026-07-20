@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://admin:Yogesh%400405@cluster0.wkrw3fv.mongodb.net/yr-manager?retryWrites=true&w=majority";
+const MONGODB_URI =
+  process.env.MONGODB_URI ||
+  "mongodb+srv://admin:Yogesh%400405@cluster0.wkrw3fv.mongodb.net/yr-manager?retryWrites=true&w=majority";
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -23,8 +25,12 @@ export async function connectToDatabase() {
   }
 
   if (!cached.promise) {
-    const opts = {
+    const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {

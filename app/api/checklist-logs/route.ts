@@ -53,7 +53,7 @@ export async function GET(request: Request) {
       query.date = targetDate;
     }
 
-    const logs = await ChecklistLog.find(query).populate("checklistItemId").sort({ date: 1 });
+    const logs = await ChecklistLog.find(query).populate("checklistItemId").sort({ date: 1 }).lean();
 
     return NextResponse.json({ success: true, logs });
   } catch (error: any) {
