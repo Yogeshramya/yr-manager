@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
-import { Menu, Clock } from "lucide-react";
+import { Menu, Clock, LogOut } from "lucide-react";
 
 interface HeaderProps {
   onToggleMobileSidebar?: () => void;
@@ -27,11 +28,25 @@ function formatLastLogin(dateStr?: string) {
 }
 
 export default function Header({ onToggleMobileSidebar }: HeaderProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const [businessName, setBusinessName] = useState("Digital Workspace");
   const [userName, setUserName] = useState("Admin");
   const [initialLetter, setInitialLetter] = useState("A");
   const [lastLogin, setLastLogin] = useState<string>("");
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (res.ok) {
+        router.push("/login");
+        router.refresh();
+      }
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -98,6 +113,14 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
         <span className="hidden sm:inline-block rounded-full bg-gold-950/40 border border-gold-500/20 px-3.5 py-1 text-xs font-semibold text-gold-400 truncate max-w-[180px]">
           💼 {businessName}
         </span>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-950/20 px-5 py-3 text-sm font-semibold text-red-400 hover:bg-red-950/30 transition"
+        >
+          <LogOut size={16} />
+          Logout
+        </button>
 
         {/* User Info and Avatar */}
         <div className="flex items-center gap-3 border-l border-slate-800 pl-4 sm:pl-6">
