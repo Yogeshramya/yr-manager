@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
 
 const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  "mongodb+srv://admin:Yogesh%400405@cluster0.wkrw3fv.mongodb.net/yr-manager?retryWrites=true&w=majority";
+  process.env.MONGODB_URI
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -20,6 +19,10 @@ if (!global.mongoose) {
 }
 
 export async function connectToDatabase() {
+  if (!MONGODB_URI) {
+    throw new Error("Please define the MONGODB_URI environment variable inside .env");
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
