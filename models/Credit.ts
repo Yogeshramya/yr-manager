@@ -1,13 +1,13 @@
 import mongoose, { Schema, model, models } from "mongoose";
 
-const PendingPaymentSchema = new Schema(
+const CreditSchema = new Schema(
   {
     businessId: {
       type: Schema.Types.ObjectId,
       ref: "Business",
       required: true,
     },
-    title: {
+    lenderName: {
       type: String,
       required: true,
       trim: true,
@@ -21,10 +21,13 @@ const PendingPaymentSchema = new Schema(
       trim: true,
       default: "",
     },
-    customerName: {
-      type: String,
-      trim: true,
-      default: "",
+    dateTaken: {
+      type: Date,
+      default: Date.now,
+    },
+    dueDate: {
+      type: Date,
+      default: null,
     },
     logId: {
       type: Schema.Types.ObjectId,
@@ -38,20 +41,16 @@ const PendingPaymentSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Collected", "Cancelled"],
+      enum: ["Pending", "Returned", "Cancelled"],
       default: "Pending",
-    },
-    date: {
-      type: Date,
-      default: Date.now,
     },
   },
   { timestamps: true }
 );
 
-if (models.PendingPayment && !models.PendingPayment.schema.paths.logId) {
-  delete (models as any).PendingPayment;
+if (models.Credit && !models.Credit.schema.paths.logId) {
+  delete (models as any).Credit;
 }
 
-export const PendingPayment = models.PendingPayment || model("PendingPayment", PendingPaymentSchema);
+export const Credit = models.Credit || model("Credit", CreditSchema);
 

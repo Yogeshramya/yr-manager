@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { connectToDatabase } from "@/lib/db";
-import { ChecklistLog } from "@/models/ChecklistLog";
+import { ChecklistLog, ChecklistItem, Credit, PendingPayment } from "@/models";
 import { verifyToken } from "@/lib/jwt";
 
 function getStartOfDay(dateInput?: string) {
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const { checklistItemId, amount, dateInput, notes } = await request.json();
+    const { checklistItemId, amount, dateInput, notes, logId } = await request.json();
 
     if (!checklistItemId) {
       return NextResponse.json({ error: "Checklist item ID is required" }, { status: 400 });
@@ -86,22 +86,80 @@ export async function POST(request: Request) {
 
     await connectToDatabase();
 
-    const query = {
-      businessId: decoded.businessId,
-      checklistItemId,
-      date: startOfDay,
-    };
+    // Drop legacy unique index if it exists in MongoDB
+    try {
+      await ChecklistLog.collection.dropIndex("businessId_1_checklistItemId_1_date_1");
+    } catch (e) {
+      // Ignore if index doesn't exist
+    }
 
-    const update = {
-      amount: Number(amount),
-      notes: notes || "",
-    };
+    let updatedLog;
+    if (logId) {
+      // Update existing specific log entry
+      updatedLog = await ChecklistLog.findOneAndUpdate(
+        { _id: logId, businessId: decoded.businessId },
+        { $set: { amount: Number(amount), notes: notes || "" } },
+        { returnDocument: "after" }
+      );
+    } else {
+      // Create a NEW log entry (allows multiple entries for the same title on the same day)
+      updatedLog = new ChecklistLog({
+        businessId: decoded.businessId,
+        checklistItemId,
+        amount: Number(amount),
+        date: startOfDay,
+        notes: notes || "",
+      });
+      await updatedLog.save();
+    }
 
-    const updatedLog = await ChecklistLog.findOneAndUpdate(
-      query,
-      { $set: update },
-      { upsert: true, returnDocument: "after" }
-    );
+    if (!updatedLog) {
+      return NextResponse.json({ error: "Failed to save log entry" }, { status: 404 });
+    }
+
+    const itemObj = await ChecklistItem.findById(checklistItemId);
+    if (itemObj) {
+      const lowerTitle = itemObj.title.toLowerCase();
+
+      // Auto-sync with Credit collection if title contains "credit"
+      if (lowerTitle.includes("credit")) {
+        const lenderName = notes && notes.trim() ? notes.trim() : itemObj.title;
+        await Credit.findOneAndUpdate(
+          { businessId: decoded.businessId, logId: updatedLog._id },
+          {
+            $set: {
+              lenderName,
+              amount: Number(amount),
+              description: notes ? notes.trim() : `Auto-logged under ${itemObj.title}`,
+              dateTaken: startOfDay,
+              checklistItemId,
+              status: "Pending",
+            },
+          },
+          { upsert: true, returnDocument: "after" }
+        );
+      }
+
+      // Auto-sync with PendingPayment collection if title contains "pending"
+      if (lowerTitle.includes("pending")) {
+        const pTitle = notes && notes.trim() ? notes.trim() : itemObj.title;
+        await PendingPayment.findOneAndUpdate(
+          { businessId: decoded.businessId, logId: updatedLog._id },
+          {
+            $set: {
+              title: pTitle,
+              customerName: pTitle,
+              amount: Number(amount),
+              description: notes ? notes.trim() : `Auto-logged under ${itemObj.title}`,
+              date: startOfDay,
+              checklistItemId,
+              status: "Pending",
+            },
+          },
+          { upsert: true, returnDocument: "after" }
+        );
+      }
+    }
 
     return NextResponse.json({ success: true, log: updatedLog });
   } catch (error: any) {
@@ -122,22 +180,44 @@ export async function DELETE(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
+    const logId = searchParams.get("logId") || searchParams.get("id");
     const checklistItemId = searchParams.get("checklistItemId");
     const dateInput = searchParams.get("date");
 
-    if (!checklistItemId) {
-      return NextResponse.json({ error: "Checklist item ID is required" }, { status: 400 });
-    }
-
-    const startOfDay = getStartOfDay(dateInput || undefined);
-
     await connectToDatabase();
 
-    const deleted = await ChecklistLog.findOneAndDelete({
-      businessId: decoded.businessId,
-      checklistItemId,
-      date: startOfDay,
-    });
+    let deleted;
+    if (logId) {
+      // Delete specific log entry by ID
+      deleted = await ChecklistLog.findOneAndDelete({
+        _id: logId,
+        businessId: decoded.businessId,
+      });
+    } else if (checklistItemId) {
+      // Delete all logs for this checklist item on the specified date
+      const startOfDay = getStartOfDay(dateInput || undefined);
+      deleted = await ChecklistLog.findOneAndDelete({
+        businessId: decoded.businessId,
+        checklistItemId,
+        date: startOfDay,
+      });
+    } else {
+      return NextResponse.json({ error: "logId or checklistItemId is required" }, { status: 400 });
+    }
+
+    if (deleted) {
+      // Delete any auto-created Credit or PendingPayment entries linked to this log
+      await Promise.all([
+        Credit.deleteMany({
+          businessId: decoded.businessId,
+          $or: [{ logId: deleted._id }],
+        }),
+        PendingPayment.deleteMany({
+          businessId: decoded.businessId,
+          $or: [{ logId: deleted._id }],
+        }),
+      ]);
+    }
 
     if (!deleted) {
       return NextResponse.json({ error: "Log entry not found" }, { status: 404 });
@@ -149,3 +229,6 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: error.message || "Failed to delete log" }, { status: 500 });
   }
 }
+
+
+

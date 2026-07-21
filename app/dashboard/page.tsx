@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyToken } from "@/lib/jwt";
 import { connectToDatabase } from "@/lib/db";
-import { Business, ChecklistItem, ChecklistLog, PendingPayment } from "@/models";
+import { Business, ChecklistItem, ChecklistLog, PendingPayment, Credit } from "@/models";
 import ChecklistDashboard from "@/app/dashboard/ChecklistDashboard";
 
 export default async function DashboardPage() {
@@ -53,6 +53,12 @@ export default async function DashboardPage() {
     businessId,
     status: "Pending",
   }).sort({ date: -1 });
+
+  // Fetch credits (money borrowed that needs to be returned)
+  const credits = await Credit.find({
+    businessId,
+    status: "Pending",
+  }).sort({ dateTaken: -1 });
 
   // Normalize documents to plain objects for safe client-side serialization
   const initialItems = checklistItems.map((item) => ({
@@ -108,12 +114,23 @@ export default async function DashboardPage() {
     date: p.date.toISOString(),
   }));
 
+  const initialCredits = credits.map((c) => ({
+    _id: c._id.toString(),
+    lenderName: c.lenderName,
+    amount: c.amount,
+    description: c.description || "",
+    dateTaken: c.dateTaken instanceof Date ? c.dateTaken.toISOString() : String(c.dateTaken),
+    dueDate: c.dueDate ? (c.dueDate instanceof Date ? c.dueDate.toISOString() : String(c.dueDate)) : null,
+    status: c.status,
+  }));
+
   return (
     <ChecklistDashboard
       initialItems={initialItems}
       initialTodayLogs={initialTodayLogs}
       initialAllLogs={initialAllLogs}
       initialPendingPayments={initialPendingPayments}
+      initialCredits={initialCredits}
       businessCurrency={currency}
     />
   );

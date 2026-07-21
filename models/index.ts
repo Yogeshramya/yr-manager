@@ -11,4 +11,5 @@ export * from "./Invoice";
 export * from "./ChecklistItem";
 export * from "./ChecklistLog";
 export * from "./PendingPayment";
+export * from "./Credit";
 

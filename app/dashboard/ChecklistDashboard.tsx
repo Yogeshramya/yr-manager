@@ -21,6 +21,7 @@ import {
   Wallet,
   Clock,
   Smartphone,
+  CreditCard,
 } from "lucide-react";
 import UpiSyncModal from "@/app/components/upi/UpiSyncModal";
 import {
@@ -64,11 +65,22 @@ interface PendingPaymentType {
   date: string;
 }
 
+interface CreditType {
+  _id: string;
+  lenderName: string;
+  amount: number;
+  description: string;
+  dateTaken: string;
+  dueDate: string | null;
+  status: string;
+}
+
 interface ChecklistDashboardProps {
   initialItems: ChecklistItemType[];
   initialTodayLogs: ChecklistLogType[];
   initialAllLogs?: ChecklistLogType[];
   initialPendingPayments?: PendingPaymentType[];
+  initialCredits?: CreditType[];
   businessCurrency: string;
 }
 
@@ -79,6 +91,7 @@ export default function ChecklistDashboard({
   initialTodayLogs,
   initialAllLogs = [],
   initialPendingPayments = [],
+  initialCredits = [],
   businessCurrency = "INR",
 }: ChecklistDashboardProps) {
   // Format today's date local string
@@ -97,6 +110,7 @@ export default function ChecklistDashboard({
   const [weeklyLogs, setWeeklyLogs] = useState<ChecklistLogType[]>([]);
   const [monthlyLogs, setMonthlyLogs] = useState<ChecklistLogType[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPaymentType[]>(initialPendingPayments);
+  const [credits, setCredits] = useState<CreditType[]>(initialCredits);
   
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -129,6 +143,9 @@ export default function ChecklistDashboard({
   const [pendingDescription, setPendingDescription] = useState("");
   const [pendingDate, setPendingDate] = useState(getTodayString());
   const [savingPending, setSavingPending] = useState(false);
+
+  // Modal for Credit
+  const [viewCreditListOpen, setViewCreditListOpen] = useState(false);
 
   // Modal for logging amount
   const [logModalOpen, setLogModalOpen] = useState(false);
@@ -189,6 +206,13 @@ export default function ChecklistDashboard({
       const dataPending = await resPending.json();
       if (dataPending.success) {
         setPendingPayments(dataPending.pendingPayments);
+      }
+
+      // 6. Fetch credits
+      const resCredits = await fetch("/api/credits");
+      const dataCredits = await resCredits.json();
+      if (dataCredits.success) {
+        setCredits(dataCredits.credits);
       }
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -275,6 +299,45 @@ export default function ChecklistDashboard({
     }
   };
 
+  // Mark credit as returned
+  const handleMarkCreditReturned = async (id: string, lenderName: string) => {
+    try {
+      const res = await fetch("/api/credits", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: "Returned" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg(`Credit to "${lenderName}" marked as Returned!`);
+        setTimeout(() => setSuccessMsg(""), 3000);
+        fetchAllData();
+      } else {
+        setErrorMsg(data.error || "Failed to mark credit as returned");
+      }
+    } catch (err) {
+      setErrorMsg("Error marking credit as returned");
+    }
+  };
+
+  // Delete credit entry
+  const handleDeleteCredit = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this credit entry?")) return;
+    try {
+      const res = await fetch(`/api/credits?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg("Credit entry deleted");
+        setTimeout(() => setSuccessMsg(""), 3000);
+        fetchAllData();
+      } else {
+        setErrorMsg(data.error || "Failed to delete credit");
+      }
+    } catch (err) {
+      setErrorMsg("Error deleting credit");
+    }
+  };
+
   // Fetch checklist items configuration
   const fetchItems = async () => {
     try {
@@ -332,9 +395,34 @@ export default function ChecklistDashboard({
     }
   };
 
-  // Handle deleting log entry (unchecking)
+  // Handle deleting a single specific log entry by logId
+  const handleDeleteSingleLog = async (logId: string) => {
+    if (!confirm("Are you sure you want to delete this specific log entry?")) return;
+
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      const res = await fetch(`/api/checklist-logs?logId=${logId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg("Entry removed");
+        setTimeout(() => setSuccessMsg(""), 3000);
+        fetchAllData();
+      } else {
+        setErrorMsg(data.error || "Failed to remove entry");
+      }
+    } catch (err) {
+      setErrorMsg("Network error removing entry");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle deleting all log entries for an item on selected date
   const handleDeleteLog = async (itemId: string) => {
-    if (!confirm("Are you sure you want to delete this daily data entry? This will uncheck the item.")) return;
+    if (!confirm("Are you sure you want to delete all daily entries for this item?")) return;
 
     setLoading(true);
     setErrorMsg("");
@@ -344,15 +432,15 @@ export default function ChecklistDashboard({
       });
       const data = await res.json();
       if (data.success) {
-        setSuccessMsg("Checklist entry removed");
+        setSuccessMsg("All entries for item removed");
         setTimeout(() => setSuccessMsg(""), 3000);
         setLogModalOpen(false);
         fetchAllData();
       } else {
-        setErrorMsg(data.error || "Failed to remove entry");
+        setErrorMsg(data.error || "Failed to remove entries");
       }
     } catch (err) {
-      setErrorMsg("Network error removing entry");
+      setErrorMsg("Network error removing entries");
     } finally {
       setLoading(false);
     }
@@ -477,6 +565,9 @@ export default function ChecklistDashboard({
 
   // Process pending payments total
   const totalPendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  // Process credits total (money I owe)
+  const totalCreditAmount = credits.reduce((sum, c) => sum + c.amount, 0);
 
   // Process weekly chart data (last 7 days)
   const getWeeklyChartData = () => {
@@ -769,6 +860,30 @@ export default function ChecklistDashboard({
             </div>
           </div>
         </div>
+
+        {/* Credit Card — money borrowed that needs to be returned */}
+        <div className="glass-card group relative overflow-hidden rounded-2xl p-4 sm:p-6 transition duration-300 hover:-translate-y-1 border-violet-500/30">
+          <div className="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-violet-500/15 blur-xl transition group-hover:scale-125" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="rounded-xl bg-violet-950/50 border border-violet-500/30 p-3 sm:p-3.5 text-violet-400 shrink-0">
+              <CreditCard className="h-5 w-5 sm:h-6 sm:w-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">Credit (To Return)</p>
+              <h4 className="mt-1 text-xl sm:text-2xl font-black text-violet-400 truncate">
+                {formatCurrency(totalCreditAmount)}
+              </h4>
+              <div className="mt-1 flex items-center justify-between text-[11px] font-semibold gap-2 flex-wrap">
+                <button
+                  onClick={() => setViewCreditListOpen(true)}
+                  className="text-slate-400 hover:text-white underline font-medium"
+                >
+                  {credits.length} credit{credits.length !== 1 ? "s" : ""} pending to return
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Main Checklist UI Panel / Configuration drawer */}
@@ -804,43 +919,45 @@ export default function ChecklistDashboard({
                     items
                       .filter(i => i.type === "Income")
                       .map((item) => {
-                        const logged = todayLogs.find((l) => {
+                        const itemLogs = todayLogs.filter((l) => {
                           const logItemId = l.checklistItemId && typeof l.checklistItemId === "object" ? l.checklistItemId._id : l.checklistItemId;
                           return logItemId === item._id;
                         });
+                        const totalLoggedAmount = itemLogs.reduce((sum, l) => sum + l.amount, 0);
+                        const isLogged = itemLogs.length > 0;
 
                         return (
                           <div
                             key={item._id}
                             onClick={() => openLogModal(item)}
                             className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition select-none ${
-                              logged
+                              isLogged
                                 ? "bg-gold-950/20 border-gold-500/40 hover:border-gold-400"
                                 : "bg-slate-950 border-slate-850 hover:border-slate-700 hover:bg-slate-900/40"
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`h-5 w-5 rounded border flex items-center justify-center transition-all ${
-                                logged
+                                isLogged
                                   ? "bg-gold-500 border-gold-500 text-black font-black"
                                   : "border-slate-750 text-transparent"
                               }`}>
                                 <Check size={14} strokeWidth={3} />
                               </div>
                               <div>
-                                <span className={`text-sm font-semibold transition ${logged ? "text-white" : "text-slate-400"}`}>
+                                <span className={`text-sm font-semibold transition ${isLogged ? "text-white" : "text-slate-400"}`}>
                                   {item.title}
                                 </span>
-                                {logged?.notes && (
-                                  <p className="text-[10px] text-slate-450 mt-0.5 max-w-[200px] truncate">
-                                    Notes: {logged.notes}
+                                {isLogged && (
+                                  <p className="text-[10px] text-gold-400 mt-0.5 font-medium">
+                                    {itemLogs.length} {itemLogs.length === 1 ? "entry" : "entries"} logged
                                   </p>
                                 )}
                               </div>
                             </div>
                             <div className="text-right">
-                              {logged ? (
-                                <span className="text-sm font-extrabold text-gold-400">{formatCurrency(logged.amount)}</span>
+                              {isLogged ? (
+                                <span className="text-sm font-extrabold text-gold-400">{formatCurrency(totalLoggedAmount)}</span>
                               ) : (
                                 <Plus size={16} className="text-slate-600 hover:text-slate-400" />
                               )}
@@ -862,43 +979,45 @@ export default function ChecklistDashboard({
                     items
                       .filter(i => i.type === "Expense")
                       .map((item) => {
-                        const logged = todayLogs.find((l) => {
+                        const itemLogs = todayLogs.filter((l) => {
                           const logItemId = l.checklistItemId && typeof l.checklistItemId === "object" ? l.checklistItemId._id : l.checklistItemId;
                           return logItemId === item._id;
                         });
+                        const totalLoggedAmount = itemLogs.reduce((sum, l) => sum + l.amount, 0);
+                        const isLogged = itemLogs.length > 0;
 
                         return (
                           <div
                             key={item._id}
                             onClick={() => openLogModal(item)}
                             className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition select-none ${
-                              logged
+                              isLogged
                                 ? "bg-red-950/20 border-red-500/40 hover:border-red-400"
                                 : "bg-slate-950 border-slate-850 hover:border-slate-700 hover:bg-slate-900/40"
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`h-5 w-5 rounded border flex items-center justify-center transition-all ${
-                                logged
+                                isLogged
                                   ? "bg-red-500 border-red-500 text-white font-black"
                                   : "border-slate-750 text-transparent"
                               }`}>
                                 <Check size={14} strokeWidth={3} />
                               </div>
                               <div>
-                                <span className={`text-sm font-semibold transition ${logged ? "text-white" : "text-slate-400"}`}>
+                                <span className={`text-sm font-semibold transition ${isLogged ? "text-white" : "text-slate-400"}`}>
                                   {item.title}
                                 </span>
-                                {logged?.notes && (
-                                  <p className="text-[10px] text-slate-400 mt-0.5 max-w-[200px] truncate">
-                                    Notes: {logged.notes}
+                                {isLogged && (
+                                  <p className="text-[10px] text-red-400 mt-0.5 font-medium">
+                                    {itemLogs.length} {itemLogs.length === 1 ? "entry" : "entries"} logged
                                   </p>
                                 )}
                               </div>
                             </div>
                             <div className="text-right">
-                              {logged ? (
-                                <span className="text-sm font-extrabold text-red-400">{formatCurrency(logged.amount)}</span>
+                              {isLogged ? (
+                                <span className="text-sm font-extrabold text-red-400">{formatCurrency(totalLoggedAmount)}</span>
                               ) : (
                                 <Plus size={16} className="text-slate-600 hover:text-slate-400" />
                               )}
@@ -937,8 +1056,14 @@ export default function ChecklistDashboard({
                   <input
                     type="text"
                     value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="e.g. Electricity, Tea Expense, Office Rent, Daily Sales"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewTitle(val);
+                      if (val.toLowerCase().includes("credit")) {
+                        setNewType("Income");
+                      }
+                    }}
+                    placeholder="e.g. Credit, Electricity, Daily Sales"
                     className="glass-input mt-1.5 w-full rounded-xl px-4 py-2.5 text-sm"
                     required
                   />
@@ -1265,10 +1390,10 @@ export default function ChecklistDashboard({
         </div>
       </div>
 
-      {/* Logging modal Overlay */}
+      {/* Log Entry Modal (Allows multiple entries under same title for target date) */}
       {logModalOpen && selectedItemForLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="glass-card w-[92vw] max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-4 sm:p-6 border border-slate-800 shadow-2xl relative animate-in scale-in duration-200">
+          <div className="glass-card w-[92vw] max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl p-4 sm:p-6 border border-slate-800 shadow-2xl relative animate-in scale-in duration-200">
             <button
               onClick={() => setLogModalOpen(false)}
               className="absolute top-4 right-4 text-slate-500 hover:text-white"
@@ -1276,26 +1401,74 @@ export default function ChecklistDashboard({
               <X size={18} />
             </button>
 
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 flex items-center gap-2">
-              <CheckCircle className={selectedItemForLog.type === "Income" ? "text-gold-400" : "text-red-400"} size={20} />
-              <span>Daily checklist logging</span>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-1">
+              Log Entries: <span className="text-gold-gradient">{selectedItemForLog.title}</span>
             </h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Storing value for <strong>{selectedItemForLog.title}</strong> ({selectedItemForLog.type}) on <strong>{selectedDate}</strong>.
+            <p className="text-xs text-slate-400 mb-4">
+              Date: <strong>{selectedDate}</strong> ({selectedItemForLog.type})
             </p>
 
+            {/* List of existing entries for this item on selectedDate */}
+            {(() => {
+              const currentItemLogs = todayLogs.filter((l) => {
+                const logItemId = l.checklistItemId && typeof l.checklistItemId === "object" ? l.checklistItemId._id : l.checklistItemId;
+                return logItemId === selectedItemForLog._id;
+              });
+
+              if (currentItemLogs.length === 0) return null;
+
+              const totalSum = currentItemLogs.reduce((s, l) => s + l.amount, 0);
+
+              return (
+                <div className="mb-6 rounded-xl bg-slate-950 border border-slate-850 p-3 sm:p-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-300 border-b border-slate-800 pb-2">
+                    <span>Logged Entries Today ({currentItemLogs.length})</span>
+                    <span className="text-gold-400 font-black">Total: {formatCurrency(totalSum)}</span>
+                  </div>
+
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {currentItemLogs.map((log) => (
+                      <div
+                        key={log._id}
+                        className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/60 border border-slate-800/60 text-xs"
+                      >
+                        <div className="min-w-0 pr-2">
+                          <span className="font-extrabold text-white">{formatCurrency(log.amount)}</span>
+                          {log.notes && <p className="text-[11px] text-slate-400 truncate">Notes: {log.notes}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSingleLog(log._id)}
+                          className="p-1.5 rounded-md text-slate-500 hover:text-red-400 hover:bg-slate-850 transition shrink-0"
+                          title="Delete this entry"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Add New Entry Form */}
             <form onSubmit={handleSaveLog} className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Plus size={14} className="text-gold-400" />
+                <span>Add Entry under {selectedItemForLog.title}</span>
+              </h4>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  How much daily data should be stored? (Amount in {businessCurrency})
+                  Amount ({businessCurrency})*
                 </label>
                 <input
                   type="number"
                   step="any"
                   value={logAmount}
                   onChange={(e) => setLogAmount(e.target.value)}
-                  placeholder="e.g. 500, 12000"
-                  className="glass-input mt-1.5 w-full rounded-xl px-4 py-3 text-lg font-bold"
+                  placeholder="e.g. 5000, 1200"
+                  className="glass-input mt-1.5 w-full rounded-xl px-4 py-3 text-lg font-bold text-gold-400"
                   required
                   autoFocus
                 />
@@ -1303,39 +1476,24 @@ export default function ChecklistDashboard({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Notes / Description (Optional)
+                  Notes / Person Name / Comments (Optional)
                 </label>
                 <textarea
                   value={logNotes}
                   onChange={(e) => setLogNotes(e.target.value)}
-                  placeholder="Specify details, payment mode or comments"
-                  className="glass-input mt-1.5 w-full rounded-xl px-4 py-2.5 text-sm h-20 resize-none"
+                  placeholder="Specify person name (e.g. Ramesh), transaction details..."
+                  className="glass-input mt-1.5 w-full rounded-xl px-4 py-2.5 text-sm h-16 resize-none"
                 />
               </div>
 
               <div className="flex gap-3 pt-2">
-                {/* Delete / Clear button if already checked */}
-                {todayLogs.some(
-                  (l) =>
-                    (l.checklistItemId && typeof l.checklistItemId === "object" ? l.checklistItemId._id : l.checklistItemId) === selectedItemForLog._id
-                ) && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteLog(selectedItemForLog._id)}
-                    className="flex-1 rounded-xl border border-red-500/20 bg-red-950/20 py-3 text-sm font-semibold text-red-400 hover:bg-red-950/30 transition flex items-center justify-center gap-1.5"
-                  >
-                    <Trash2 size={16} />
-                    Uncheck / Clear
-                  </button>
-                )}
-
                 <button
                   type="submit"
                   disabled={savingLog}
-                  className="flex-2 flex-grow rounded-xl bg-gold-gradient py-3 text-sm font-bold text-black hover:brightness-110 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-gold-gradient py-3 text-sm font-bold text-black hover:brightness-110 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  {savingLog ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} strokeWidth={2.5} />}
-                  Save Log Entry
+                  {savingLog ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} strokeWidth={2.5} />}
+                  Add Entry
                 </button>
               </div>
             </form>
@@ -1527,6 +1685,100 @@ export default function ChecklistDashboard({
         onSuccess={fetchAllData}
         checklistItems={items.map((i) => ({ _id: i._id, title: i.title, type: i.type }))}
       />
+
+      {/* View Credits List Modal */}
+      {viewCreditListOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="glass-card w-[92vw] max-w-xl max-h-[85vh] rounded-2xl p-4 sm:p-6 border border-violet-500/20 shadow-2xl relative flex flex-col">
+            <button
+              onClick={() => setViewCreditListOpen(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4 gap-2 flex-wrap sm:flex-nowrap">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  <CreditCard className="text-violet-400" size={20} />
+                  <span>Credits to Return</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Total Owed: <strong className="text-violet-400">{formatCurrency(totalCreditAmount)}</strong> ({credits.length} pending)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {credits.length === 0 ? (
+                <div className="py-12 text-center text-slate-500">
+                  <CreditCard size={32} className="mx-auto mb-2 opacity-30" />
+                  <p className="text-sm font-semibold">No pending credits.</p>
+                  <p className="text-xs text-slate-600 mt-1">All credits have been returned!</p>
+                </div>
+              ) : (
+                credits.map((c) => {
+                  const isOverdue = c.dueDate && new Date(c.dueDate) < new Date();
+                  return (
+                    <div
+                      key={c._id}
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl bg-slate-950 border gap-3 ${
+                        isOverdue ? "border-rose-500/40" : "border-slate-850"
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-white text-sm">{c.lenderName}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-950/60 text-violet-400 border border-violet-500/30 font-bold">
+                            Credit
+                          </span>
+                          {isOverdue && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-950/60 text-rose-400 border border-rose-500/30 font-bold">
+                              Overdue
+                            </span>
+                          )}
+                        </div>
+                        {c.description && (
+                          <p className="text-xs text-slate-400 italic">Purpose: {c.description}</p>
+                        )}
+                        <p className="text-[10px] text-slate-500">
+                          Taken: {new Date(c.dateTaken).toLocaleDateString()}
+                          {c.dueDate && (
+                            <span className={isOverdue ? " text-rose-400 font-semibold" : ""}>
+                              {" "}&middot; Return by: {new Date(c.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 self-end sm:self-center">
+                        <span className="text-base font-black text-violet-400">
+                          {formatCurrency(c.amount)}
+                        </span>
+                        <button
+                          onClick={() => handleMarkCreditReturned(c._id, c.lenderName)}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/60 text-xs font-bold transition flex items-center gap-1"
+                          title="Mark as Returned"
+                        >
+                          <Check size={12} strokeWidth={3} />
+                          Returned
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCredit(c._id)}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-900 transition"
+                          title="Delete credit entry"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

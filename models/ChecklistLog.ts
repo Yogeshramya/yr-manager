@@ -28,7 +28,12 @@ const ChecklistLogSchema = new Schema(
   { timestamps: true }
 );
 
-// Ensure only one log entry per checklist item per day
-ChecklistLogSchema.index({ businessId: 1, checklistItemId: 1, date: 1 }, { unique: true });
+// Non-unique index for fast lookup of daily checklist logs
+ChecklistLogSchema.index({ businessId: 1, checklistItemId: 1, date: 1 });
+
+if (models.ChecklistLog) {
+  delete (models as any).ChecklistLog;
+}
 
 export const ChecklistLog = models.ChecklistLog || model("ChecklistLog", ChecklistLogSchema);
+
