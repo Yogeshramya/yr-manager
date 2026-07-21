@@ -6,8 +6,14 @@ export default async function Home() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
-  if (token && verifyToken(token)) {
-    redirect("/dashboard");
+  if (token) {
+    const decoded = verifyToken(token);
+    if (decoded && decoded.businessId) {
+      redirect("/dashboard");
+    } else {
+      cookieStore.delete("token");
+      redirect("/login");
+    }
   } else {
     redirect("/login");
   }

@@ -16,6 +16,7 @@ export default async function DashboardPage() {
 
   const decoded = verifyToken(token);
   if (!decoded || !decoded.businessId) {
+    cookieStore.delete("token");
     redirect("/login");
   }
 

@@ -175,6 +175,10 @@ export default function ChecklistDashboard({
     try {
       // 1. Fetch logs for selected date
       const resToday = await fetch(`/api/checklist-logs?date=${selectedDate}`);
+      if (resToday.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
       const dataToday = await resToday.json();
       if (dataToday.success) {
         setTodayLogs(dataToday.logs);
