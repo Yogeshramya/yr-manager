@@ -22,108 +22,131 @@ export default async function DashboardPage() {
 
   const { businessId } = decoded;
 
-  await connectToDatabase();
+  let currency = "INR";
+  let initialItems: any[] = [];
+  let initialTodayLogs: any[] = [];
+  let initialAllLogs: any[] = [];
+  let initialPendingPayments: any[] = [];
+  let initialCredits: any[] = [];
 
-  // Get business info for currency setting
-  const business = await Business.findById(businessId);
-  const currency = business?.currency || "INR";
+  try {
+    await connectToDatabase();
 
-  // Fetch checklist items configured for this business
-  const checklistItems = await ChecklistItem.find({
-    businessId,
-    active: true,
-  }).sort({ createdAt: 1 });
+    // Get business info for currency setting
+    const business = await Business.findById(businessId);
+    if (business?.currency) {
+      currency = business.currency;
+    }
 
-  // Get current date normalized to midnight
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    // Fetch checklist items configured for this business
+    const checklistItems = await ChecklistItem.find({
+      businessId,
+      active: true,
+    }).sort({ createdAt: 1 });
 
-  // Fetch today's checklist logs
-  const todayLogs = await ChecklistLog.find({
-    businessId,
-    date: startOfToday,
-  }).populate("checklistItemId");
+    // Get current date normalized to midnight
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
 
-  // Fetch all historical logs for cumulative balance calculation
-  const allLogs = await ChecklistLog.find({
-    businessId,
-  }).populate("checklistItemId").sort({ date: 1 });
+    // Fetch today's checklist logs
+    const todayLogs = await ChecklistLog.find({
+      businessId,
+      date: startOfToday,
+    }).populate("checklistItemId");
 
-  // Fetch pending payments
-  const pendingPayments = await PendingPayment.find({
-    businessId,
-    status: "Pending",
-  }).sort({ date: -1 });
+    // Fetch all historical logs for cumulative balance calculation
+    const allLogs = await ChecklistLog.find({
+      businessId,
+    }).populate("checklistItemId").sort({ date: 1 });
 
-  // Fetch credits (money borrowed that needs to be returned)
-  const credits = await Credit.find({
-    businessId,
-    status: "Pending",
-  }).sort({ dateTaken: -1 });
+    // Fetch pending payments
+    const pendingPayments = await PendingPayment.find({
+      businessId,
+      status: "Pending",
+    }).sort({ date: -1 });
 
-  // Normalize documents to plain objects for safe client-side serialization
-  const initialItems = checklistItems.map((item) => ({
-    _id: item._id.toString(),
-    title: item.title,
-    type: item.type,
-    active: item.active,
-  }));
+    // Fetch credits (money borrowed that needs to be returned)
+    const credits = await Credit.find({
+      businessId,
+      status: "Pending",
+    }).sort({ dateTaken: -1 });
 
-  const initialTodayLogs = todayLogs.map((log) => ({
-    _id: log._id.toString(),
-    checklistItemId:
-      log.checklistItemId && typeof log.checklistItemId === "object"
-        ? {
-            _id: log.checklistItemId._id.toString(),
-            title: log.checklistItemId.title,
-            type: log.checklistItemId.type,
-            active: log.checklistItemId.active,
-          }
-        : log.checklistItemId
-        ? log.checklistItemId.toString()
-        : "",
-    amount: log.amount,
-    date: log.date.toISOString(),
-    notes: log.notes || "",
-  }));
+    const safeDateISO = (d: any) => {
+      if (!d) return new Date().toISOString();
+      try {
+        const dateObj = d instanceof Date ? d : new Date(d);
+        return isNaN(dateObj.getTime()) ? new Date().toISOString() : dateObj.toISOString();
+      } catch {
+        return new Date().toISOString();
+      }
+    };
 
-  const initialAllLogs = allLogs.map((log) => ({
-    _id: log._id.toString(),
-    checklistItemId:
-      log.checklistItemId && typeof log.checklistItemId === "object"
-        ? {
-            _id: log.checklistItemId._id.toString(),
-            title: log.checklistItemId.title,
-            type: log.checklistItemId.type,
-            active: log.checklistItemId.active,
-          }
-        : log.checklistItemId
-        ? log.checklistItemId.toString()
-        : "",
-    amount: log.amount,
-    date: log.date.toISOString(),
-    notes: log.notes || "",
-  }));
+    // Normalize documents to plain objects for safe client-side serialization
+    initialItems = checklistItems.map((item) => ({
+      _id: item._id.toString(),
+      title: item.title || "",
+      type: item.type || "Expense",
+      active: Boolean(item.active),
+    }));
 
-  const initialPendingPayments = pendingPayments.map((p) => ({
-    _id: p._id.toString(),
-    title: p.title,
-    amount: p.amount,
-    description: p.description || "",
-    customerName: p.customerName || "",
-    status: p.status,
-    date: p.date.toISOString(),
-  }));
+    initialTodayLogs = todayLogs.map((log) => ({
+      _id: log._id.toString(),
+      checklistItemId:
+        log.checklistItemId && typeof log.checklistItemId === "object"
+          ? {
+              _id: log.checklistItemId._id ? log.checklistItemId._id.toString() : "",
+              title: log.checklistItemId.title || "",
+              type: log.checklistItemId.type || "Expense",
+              active: Boolean(log.checklistItemId.active),
+            }
+          : log.checklistItemId
+          ? log.checklistItemId.toString()
+          : "",
+      amount: Number(log.amount) || 0,
+      date: safeDateISO(log.date),
+      notes: log.notes || "",
+    }));
 
-  const initialCredits = credits.map((c) => ({
-    _id: c._id.toString(),
-    lenderName: c.lenderName,
-    amount: c.amount,
-    description: c.description || "",
-    dateTaken: c.dateTaken instanceof Date ? c.dateTaken.toISOString() : String(c.dateTaken),
-    dueDate: c.dueDate ? (c.dueDate instanceof Date ? c.dueDate.toISOString() : String(c.dueDate)) : null,
-    status: c.status,
-  }));
+    initialAllLogs = allLogs.map((log) => ({
+      _id: log._id.toString(),
+      checklistItemId:
+        log.checklistItemId && typeof log.checklistItemId === "object"
+          ? {
+              _id: log.checklistItemId._id ? log.checklistItemId._id.toString() : "",
+              title: log.checklistItemId.title || "",
+              type: log.checklistItemId.type || "Expense",
+              active: Boolean(log.checklistItemId.active),
+            }
+          : log.checklistItemId
+          ? log.checklistItemId.toString()
+          : "",
+      amount: Number(log.amount) || 0,
+      date: safeDateISO(log.date),
+      notes: log.notes || "",
+    }));
+
+    initialPendingPayments = pendingPayments.map((p) => ({
+      _id: p._id.toString(),
+      title: p.title || "",
+      amount: Number(p.amount) || 0,
+      description: p.description || "",
+      customerName: p.customerName || "",
+      status: p.status || "Pending",
+      date: safeDateISO(p.date),
+    }));
+
+    initialCredits = credits.map((c) => ({
+      _id: c._id.toString(),
+      lenderName: c.lenderName || "Lender",
+      amount: Number(c.amount) || 0,
+      description: c.description || "",
+      dateTaken: safeDateISO(c.dateTaken),
+      dueDate: c.dueDate ? safeDateISO(c.dueDate) : null,
+      status: c.status || "Pending",
+    }));
+  } catch (err) {
+    console.error("Dashboard Page Server Component render error:", err);
+  }
 
   return (
     <ChecklistDashboard

@@ -52,6 +52,7 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
     const fetchUser = async () => {
       try {
         const res = await fetch("/api/auth/me");
+        if (res.status === 401) return;
         if (res.ok) {
           const data = await res.json();
           if (data.user) {
@@ -67,7 +68,7 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
           }
         }
       } catch (err) {
-        console.error("Failed to load header auth details", err);
+        // Silently ignore auth fetch errors
       }
     };
     fetchUser();
